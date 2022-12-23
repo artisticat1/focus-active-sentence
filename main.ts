@@ -83,7 +83,7 @@ class FocusActiveSentenceSettingTab extends PluginSettingTab {
 
 function getActiveSentenceBounds(line: Line, pos: number) {
 	// @ts-ignore
-	const plugin:FocusActiveSentencePlugin = window.app.plugins.plugins["obsidian-highlight-active-sentence"];
+	const plugin:FocusActiveSentencePlugin = window.app.plugins.plugins["obsidian-focus-active-sentence"];
 	const sentenceDelimiters = plugin.settings.sentenceDelimiters.split("");
 	const extraCharacters = plugin.settings.extraCharacters.split("");
 
