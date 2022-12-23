@@ -1,0 +1,11 @@
+{
+	"id": "obsidian-focus-active-sentence",
+	"name": "Focus Active Sentence",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Focus on the sentence the cursor is currently resting on.",
+	"author": "artisticat",
+	"authorUrl": "https://github.com/artisticat1",
+	"fundingUrl": "https://ko-fi.com/artisticat",
+	"isDesktopOnly": false
+}
