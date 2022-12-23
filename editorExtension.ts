@@ -120,15 +120,33 @@ function getActiveSentenceDecos(view: EditorView) {
 
 export const FocusActiveSentenceViewPlugin = ViewPlugin.fromClass(class {
     decorations: DecorationSet;
+	editorElement: HTMLElement | null;
 
     constructor(view: EditorView) {
         this.decorations = getActiveSentenceDecos(view);
+
+		this.editorElement = view.contentDOM.parentElement;
     }
 
     update(update: ViewUpdate) {
 		if (update.docChanged || update.selectionSet) {
 			this.decorations = getActiveSentenceDecos(update.view);
+
+			if (this.editorElement) {
+				this.editorElement.addClass("focus-active-sentence");
+			}
 		}
     }
 
 }, { decorations: v => v.decorations, });
+
+
+export const scrollEventHandler = EditorView.domEventHandlers({
+	scroll(event, view) {
+		const editorElement = view.contentDOM.parentElement;
+
+		if (editorElement) {
+			editorElement.removeClass("focus-active-sentence");
+		}
+	}
+});

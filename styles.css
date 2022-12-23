@@ -1,24 +1,17 @@
-/*
+/* Only apply styling when the `focus-active-sentence` class is present */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
-
-.cm-line {
+.focus-active-sentence .cm-line {
     opacity: 0.5;
 }
 
-.cm-active.cm-line {
+.focus-active-sentence .cm-active.cm-line {
     opacity: 1;
 }
 
-.cm-active.cm-line .active-paragraph {
+.focus-active-sentence .cm-active.cm-line .active-paragraph {
     opacity: 0.5;
 }
 
-.cm-active.cm-line .active-sentence {
+.focus-active-sentence .cm-active.cm-line .active-sentence {
     opacity: 1;
 }

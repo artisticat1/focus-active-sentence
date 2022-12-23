@@ -1,5 +1,5 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { FocusActiveSentenceViewPlugin } from 'editorExtension';
+import { FocusActiveSentenceViewPlugin, scrollEventHandler } from 'editorExtension';
 
 
 interface FocusActiveSentencePluginSettings {
@@ -17,10 +17,10 @@ export default class FocusActiveSentencePlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new FocusActiveSentenceSettingTab(this.app, this));
 
 		this.registerEditorExtension(FocusActiveSentenceViewPlugin.extension);
+		this.registerEditorExtension(scrollEventHandler);
 	}
 
 	onunload() {
