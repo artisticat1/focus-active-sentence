@@ -1,11 +1,28 @@
 import { Line, Range } from "@codemirror/state";
 import { EditorView, ViewUpdate, Decoration, DecorationSet, ViewPlugin } from "@codemirror/view";
 
+
+function textStartsWithTitle(lineText: string, titles: string[], i: number) {
+	let foundTitle = false;
+
+	// Account for titles e.g. Mr., Ms., Mrs.
+	for (const title of titles) {
+		if (lineText.slice(i+1 - title.length, i+1) === title) {
+			foundTitle = true;
+			break;
+		}
+	}
+	
+	return foundTitle
+}
+
+
 function getActiveSentenceBounds(line: Line, pos: number) {
 	// @ts-ignore
 	const plugin:FocusActiveSentencePlugin = window.app.plugins.plugins["obsidian-focus-active-sentence"];
 	const sentenceDelimiters = plugin.settings.sentenceDelimiters.split("");
 	const extraCharacters = plugin.settings.extraCharacters.split("");
+	const titles = plugin.settings.titles.split("\n");
 
 	const lineStart = line.from;
 	const lineText = line.text;
@@ -15,6 +32,11 @@ function getActiveSentenceBounds(line: Line, pos: number) {
 	for (let i = pos-lineStart-1; i >= 0; i--) {
 
 		if (sentenceDelimiters.contains(lineText[i])) {
+
+			// Account for titles e.g. Mr., Ms., Mrs.
+			if (textStartsWithTitle(lineText, titles, i)) continue;
+
+
 			let offset = 1;
 
 			// Don't highlight spaces between sentences
@@ -40,6 +62,10 @@ function getActiveSentenceBounds(line: Line, pos: number) {
 	for (let i = pos-lineStart; i < line.length; i++) {
 
 		if (sentenceDelimiters.contains(lineText[i])) {
+
+			// Account for titles e.g. Mr., Ms., Mrs.
+			if (textStartsWithTitle(lineText, titles, i)) continue;
+
 
 			let offset = 1;
 
