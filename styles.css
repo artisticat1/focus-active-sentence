@@ -1,17 +1,15 @@
-/* Only apply styling when the `focus-active-sentence` class is present */
-
-.focus-active-sentence .cm-line {
+.cm-line {
     opacity: 0.5;
 }
 
-.focus-active-sentence .cm-active.cm-line {
+.cm-active.cm-line {
     opacity: 1;
 }
 
-.focus-active-sentence .cm-active.cm-line .active-paragraph {
+.cm-active.cm-line .active-paragraph {
     opacity: 0.5;
 }
 
-.focus-active-sentence .cm-active.cm-line .active-sentence {
+.cm-active.cm-line .active-sentence {
     opacity: 1;
 }
