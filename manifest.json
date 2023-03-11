@@ -1,7 +1,7 @@
 {
 	"id": "focus-active-sentence",
 	"name": "Focus Active Sentence",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"minAppVersion": "0.15.0",
 	"description": "Highlight the sentence the cursor is currently resting on.",
 	"author": "artisticat",
