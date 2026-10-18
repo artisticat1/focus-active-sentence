@@ -1,178 +1,210 @@
-import { Line, Range } from "@codemirror/state";
-import { EditorView, ViewUpdate, Decoration, DecorationSet, ViewPlugin } from "@codemirror/view";
+import type { Line, Range } from '@codemirror/state';
+import {
+	Decoration,
+	type DecorationSet,
+	EditorView,
+	type ViewUpdate,
+	ViewPlugin,
+} from '@codemirror/view';
+import type { FocusActiveSentencePluginSettings } from './main';
 
+const EDITOR_CLASS = 'focus-active-sentence';
+const ACTIVE_LINE_CLASS = 'focus-active-sentence-line';
+const ACTIVE_SENTENCE_CLASS = 'focus-active-sentence-active';
+const INACTIVE_TEXT_CLASS = 'focus-active-sentence-inactive';
 
-function textStartsWithTitle(lineText: string, titles: string[], i: number) {
-	let foundTitle = false;
-
-	// Account for titles e.g. Mr., Ms., Mrs.
-	for (const title of titles) {
-		if (lineText.slice(i+1 - title.length, i+1) === title) {
-			foundTitle = true;
-			break;
+function textEndsWithTitle(lineText: string, titles: string[], index: number): boolean {
+	return titles.some((title) => {
+		const titleStart = index + 1 - title.length;
+		if (titleStart < 0 || lineText.slice(titleStart, index + 1) !== title) {
+			return false;
 		}
-	}
-	
-	return foundTitle
+
+		return titleStart === 0 || /[\s([{'\u201c\u2018]/u.test(lineText[titleStart - 1] ?? '');
+	});
 }
 
+function isSentenceEnd(
+	lineText: string,
+	index: number,
+	sentenceDelimiters: Set<string>,
+	extraCharacters: Set<string>,
+	titles: string[],
+): boolean {
+	if (
+		!sentenceDelimiters.has(lineText[index] ?? '')
+		|| textEndsWithTitle(lineText, titles, index)
+	) {
+		return false;
+	}
 
-function getActiveSentenceBounds(line: Line, pos: number) {
-	// @ts-ignore
-	const plugin:FocusActiveSentencePlugin = window.app.plugins.plugins["focus-active-sentence"];
-	const sentenceDelimiters = plugin.settings.sentenceDelimiters.split("");
-	const extraCharacters = plugin.settings.extraCharacters.split("");
-	const titles = plugin.settings.titles.split("\n");
+	let nextIndex = index + 1;
+	while (
+		nextIndex < lineText.length
+		&& sentenceDelimiters.has(lineText[nextIndex] ?? '')
+	) {
+		nextIndex++;
+	}
+
+	while (
+		nextIndex < lineText.length
+		&& extraCharacters.has(lineText[nextIndex] ?? '')
+	) {
+		nextIndex++;
+	}
+
+	return nextIndex === lineText.length || /\s/u.test(lineText[nextIndex] ?? '');
+}
+
+export function getActiveSentenceBounds(
+	line: Line,
+	pos: number,
+	settings: FocusActiveSentencePluginSettings,
+) {
+	const sentenceDelimiters = new Set(settings.sentenceDelimiters);
+	const extraCharacters = new Set(settings.extraCharacters);
+	const titles = settings.titles
+		.split(/\r?\n/u)
+		.map(title => title.trim())
+		.filter(title => title.length > 0);
 
 	const lineStart = line.from;
 	const lineText = line.text;
+	const cursorOffset = pos - lineStart;
 
 	let start = -1;
 
-	for (let i = pos-lineStart-1; i >= 0; i--) {
-
-		if (sentenceDelimiters.contains(lineText[i])) {
-
-			// Account for titles e.g. Mr., Ms., Mrs.
-			if (textStartsWithTitle(lineText, titles, i)) continue;
-
-
+	for (let i = cursorOffset - 1; i >= 0; i--) {
+		if (isSentenceEnd(lineText, i, sentenceDelimiters, extraCharacters, titles)) {
 			let offset = 1;
-
-			// Don't highlight spaces between sentences
-			while (lineText[i + offset] === " " && offset < pos-lineStart-1) {
-				offset += 1;
+			while (
+				i + offset < cursorOffset
+				&& extraCharacters.has(lineText[i + offset] ?? '')
+			) {
+				offset++;
 			}
 
-			// Account for markdown syntax at the end of sentences (*)
-			while (extraCharacters.contains(lineText[i + offset]) && sentenceDelimiters.contains(lineText[i + offset - 1]) && offset < pos-lineStart-1) {
-				offset += 1;
+			while (i + offset < cursorOffset && /\s/u.test(lineText[i + offset] ?? '')) {
+				offset++;
 			}
 
 			start = i + offset;
-
 			break;
 		}
 	}
-	if (start == -1) start = 0;
-
+	if (start === -1) {
+		start = 0;
+	}
 
 	let end = -1;
 
-	for (let i = pos-lineStart; i < line.length; i++) {
-
-		if (sentenceDelimiters.contains(lineText[i])) {
-
-			// Account for titles e.g. Mr., Ms., Mrs.
-			if (textStartsWithTitle(lineText, titles, i)) continue;
-
-
+	for (let i = cursorOffset; i < line.length; i++) {
+		if (isSentenceEnd(lineText, i, sentenceDelimiters, extraCharacters, titles)) {
 			let offset = 1;
-
-			// Account for ellipses, "!?", etc.
-			while (sentenceDelimiters.contains(lineText[i + offset]) && offset < line.length) {
-				offset += 1;
+			while (
+				i + offset < line.length
+				&& sentenceDelimiters.has(lineText[i + offset] ?? '')
+			) {
+				offset++;
 			}
 
-			// Account for markdown syntax at the end of sentences (*)
-			while (extraCharacters.contains(lineText[i + offset]) && offset < line.length) {
-				offset += 1;
+			while (
+				i + offset < line.length
+				&& extraCharacters.has(lineText[i + offset] ?? '')
+			) {
+				offset++;
 			}
 
 			end = i + offset;
-
 			break;
 		}
 	}
 
-
-	if (end != -1) {
-		return {start: start + lineStart, end: end + lineStart};
-	}
-	else {
-		return {start: start + lineStart, end: null};
-	}
+	return {
+		start: start + lineStart,
+		end: end === -1 ? null : end + lineStart,
+	};
 }
 
-
-function getActiveSentenceDecos(view: EditorView) {
-
-	const widgets: Range<Decoration>[] = [];
-    const selection = view.state.selection.main;
-	const pos = selection.from;
+function getActiveSentenceDecorations(
+	view: EditorView,
+	settings: FocusActiveSentencePluginSettings,
+): DecorationSet {
+	const decorations: Range<Decoration>[] = [];
+	const selection = view.state.selection.main;
+	const pos = selection.head;
 	const line = view.state.doc.lineAt(pos);
+	decorations.push(Decoration.line({ class: ACTIVE_LINE_CLASS }).range(line.from));
 
-	let activeSentenceBounds = getActiveSentenceBounds(line, pos);
+	if (settings.focusLevel === 'paragraph') {
+		return Decoration.set(decorations, true);
+	}
 
+	let activeSentenceBounds = getActiveSentenceBounds(line, pos, settings);
 
-	if (activeSentenceBounds.end == null) {
-		if (pos > line.from) {
-			activeSentenceBounds = getActiveSentenceBounds(line, pos-1);
-		}
+	if (activeSentenceBounds.end === null && pos > line.from) {
+		activeSentenceBounds = getActiveSentenceBounds(line, pos - 1, settings);
 	}
 
 	const start = activeSentenceBounds.start;
-	let end = activeSentenceBounds.end;
-	if (end == null) end = line.to;
+	const end = activeSentenceBounds.end ?? line.to;
 
-	// console.log("Current sentence:");
-	// console.log(line.text.slice(start, end));
-
-	function addWidget(from: number, to: number, className: string) {
-		widgets.push(Decoration.mark({
+	function addMark(from: number, to: number, className: string) {
+		decorations.push(Decoration.mark({
 			inclusive: true,
-			attributes: {},
-			class: className
+			class: className,
 		}).range(from, to));
 	}
 
-	if (start != end) {
-		addWidget(start, end, "active-sentence");
+	if (start !== end) {
+		addMark(start, end, ACTIVE_SENTENCE_CLASS);
 
-		if (line.from != start)
-			addWidget(line.from, start, "active-paragraph");
+		if (line.from !== start) {
+			addMark(line.from, start, INACTIVE_TEXT_CLASS);
+		}
 
-		if (end != line.to)
-			addWidget(end, line.to, "active-paragraph");
+		if (end !== line.to) {
+			addMark(end, line.to, INACTIVE_TEXT_CLASS);
+		}
+	} else if (line.from !== line.to) {
+		addMark(line.from, line.to, INACTIVE_TEXT_CLASS);
 	}
-	else {
-		if (line.from != line.to)
-			addWidget(line.from, line.to, "active-paragraph");
-	}
 
-    return Decoration.set(widgets, true);
+	return Decoration.set(decorations, true);
 }
 
+export function createFocusActiveSentenceExtension(
+	settings: FocusActiveSentencePluginSettings,
+) {
+	const focusActiveSentenceViewPlugin = ViewPlugin.fromClass(class {
+		decorations: DecorationSet;
+		private readonly editorElement: HTMLElement;
 
-export const FocusActiveSentenceViewPlugin = ViewPlugin.fromClass(class {
-    decorations: DecorationSet;
-	editorElement: HTMLElement | null;
+		constructor(view: EditorView) {
+			this.decorations = getActiveSentenceDecorations(view, settings);
+			this.editorElement = view.dom;
+			this.editorElement.classList.add(EDITOR_CLASS);
+		}
 
-    constructor(view: EditorView) {
-        this.decorations = getActiveSentenceDecos(view);
-
-		this.editorElement = view.contentDOM.parentElement;
-    }
-
-    update(update: ViewUpdate) {
-		if (update.docChanged || update.selectionSet) {
-			this.decorations = getActiveSentenceDecos(update.view);
-
-			if (this.editorElement) {
-				this.editorElement.addClass("focus-active-sentence");
+		update(update: ViewUpdate) {
+			if (update.docChanged || update.selectionSet) {
+				this.decorations = getActiveSentenceDecorations(update.view, settings);
+				this.editorElement.classList.add(EDITOR_CLASS);
 			}
 		}
-    }
 
-}, { decorations: v => v.decorations, });
-
-
-export const scrollEventHandler = EditorView.domEventHandlers({
-	scroll(event, view) {
-		const editorElement = view.contentDOM.parentElement;
-
-		if (editorElement) {
-			editorElement.removeClass("focus-active-sentence");
+		destroy() {
+			this.editorElement.classList.remove(EDITOR_CLASS);
 		}
-	}
-});
+	}, {
+		decorations: value => value.decorations,
+	});
+
+	const scrollEventHandler = EditorView.domEventHandlers({
+		scroll(_event, view) {
+			view.dom.classList.remove(EDITOR_CLASS);
+		},
+	});
+
+	return [focusActiveSentenceViewPlugin, scrollEventHandler];
+}

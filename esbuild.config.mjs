@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 import process from "process";
-import builtins from 'builtin-modules'
+import { builtinModules } from 'node:module';
 
 const banner =
 `/*
@@ -9,9 +9,9 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
-const prod = (process.argv[2] === 'production');
+const prod = process.argv[2] === 'production';
 
-esbuild.build({
+const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
@@ -31,12 +31,20 @@ esbuild.build({
 		'@lezer/common',
 		'@lezer/highlight',
 		'@lezer/lr',
-		...builtins],
+		...builtinModules,
+	],
 	format: 'cjs',
-	watch: !prod,
-	target: 'es2018',
+	target: 'es2021',
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
 	outfile: 'main.js',
-}).catch(() => process.exit(1));
+	minify: prod,
+});
+
+if (prod) {
+	await context.rebuild();
+	await context.dispose();
+} else {
+	await context.watch();
+}

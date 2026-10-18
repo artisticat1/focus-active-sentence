@@ -1,26 +1,47 @@
 {
 	"name": "focus-active-sentence",
-	"version": "1.1.0",
-	"description": "Highlight the sentence the cursor is currently resting on.",
+	"version": "2.0.0",
+	"description": "Keep the active sentence or paragraph in focus while dimming the rest of the document.",
 	"main": "main.js",
+	"type": "module",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"lint": "eslint .",
+		"check": "npm run lint && npm run build",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
-	"author": "",
+	"author": "artisticat",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/artisticat1/focus-active-sentence.git"
+	},
+	"bugs": {
+		"url": "https://github.com/artisticat1/focus-active-sentence/issues"
+	},
+	"engines": {
+		"node": ">=20.19.0"
+	},
+	"overrides": {
+		"moment": "2.31.0"
+	},
 	"devDependencies": {
-		"@types/node": "^16.11.6",
-		"@typescript-eslint/eslint-plugin": "5.29.0",
-		"@typescript-eslint/parser": "5.29.0",
-		"@codemirror/state": "^6.0.0",
-		"@codemirror/view": "^6.0.0",
-		"builtin-modules": "3.3.0",
-		"esbuild": "0.14.47",
-		"obsidian": "latest",
-		"tslib": "2.4.0",
-		"typescript": "4.7.4"
+		"@codemirror/state": "^6.7.6",
+		"@codemirror/view": "6.43.13",
+		"@eslint/js": "^9.39.4",
+		"@types/node": "^22.15.17",
+		"esbuild": "0.25.5",
+		"eslint": "^10.13.0",
+		"eslint-plugin-obsidianmd": "^0.4.0",
+		"globals": "^17.6.0",
+		"jiti": "^2.6.1",
+		"obsidian": "^1.14.4",
+		"typescript": "^5.8.3",
+		"typescript-eslint": "^8.59.1"
+	},
+	"allowScripts": {
+		"esbuild@0.25.5": true
 	}
 }

@@ -1,9 +1,9 @@
 {
 	"id": "focus-active-sentence",
 	"name": "Focus Active Sentence",
-	"version": "1.1.0",
-	"minAppVersion": "0.15.0",
-	"description": "Highlight the sentence the cursor is currently resting on.",
+	"version": "2.0.0",
+	"minAppVersion": "1.13.0",
+	"description": "Keep the active sentence or paragraph in focus while dimming the rest of the document.",
 	"author": "artisticat",
 	"authorUrl": "https://github.com/artisticat1",
 	"fundingUrl": "https://ko-fi.com/artisticat",
